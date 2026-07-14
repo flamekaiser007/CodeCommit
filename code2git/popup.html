@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>CodeCommit</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap');
+        .cc-mono { font-family: 'JetBrains Mono', monospace; }
+        .cc-sans { font-family: 'Inter', sans-serif; }
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+}
+
+body{
+
+width:360px;
+min-height:560px;
+
+background:#ffffff;
+
+font-family:Inter,sans-serif;
+
+color:#111;
+
+}
+
+.container{
+
+padding:22px;
+
+}
+
+/* HEADER */
+
+.header{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+margin-bottom:28px;
+
+}
+
+.logo{
+
+font-family:"JetBrains Mono",monospace;
+
+font-size:26px;
+
+font-weight:1000;
+
+}
+
+.logo span{
+
+color:#777;
+
+}
+
+.version{
+
+font-size:12px;
+
+color:#999;
+
+}
+
+/* LOGIN */
+
+#loggedOutView{
+
+display:none;
+
+margin-top:55px;
+
+text-align:center;
+
+}
+
+.hero{
+
+font-size:50px;
+
+margin-bottom:20px;
+
+}
+
+h2{
+
+font-size:24px;
+
+margin-bottom:12px;
+
+}
+
+.subtitle{
+
+font-size:14px;
+
+line-height:1.7;
+
+color:#666;
+
+margin-bottom:30px;
+
+}
+
+/* BUTTONS */
+
+button{
+
+width:100%;
+
+padding:13px;
+
+border:none;
+
+border-radius:12px;
+
+font-size:14px;
+
+font-weight:600;
+
+font-family:inherit;
+
+cursor:pointer;
+
+transition:.25s;
+
+}
+
+.primary{
+
+background:#111;
+
+color:white;
+
+}
+
+.primary:hover{
+
+background:#222;
+
+}
+
+.primary.small{
+
+padding:10px;
+
+font-size:13px;
+
+margin-top:10px;
+
+}
+
+.secondary{
+
+background:#F4F4F4;
+
+color:#111;
+
+border:1px solid #E5E5E5;
+
+margin-top:18px;
+
+}
+
+.secondary:hover{
+
+background:#ECECEC;
+
+}
+
+/* CONNECTED */
+
+#loggedInView{
+
+display:none;
+
+}
+
+.profile{
+
+display:flex;
+
+justify-content:space-between;
+
+align-items:center;
+
+padding:16px;
+
+border:1px solid #ECECEC;
+
+border-radius:14px;
+
+margin-bottom:20px;
+
+background:#FAFAFA;
+
+}
+
+.profile-left{
+
+display:flex;
+
+flex-direction:column;
+
+gap:4px;
+
+}
+
+.profile-left span:first-child{
+
+font-size:14px;
+
+font-weight:600;
+
+}
+
+.profile-left small{
+
+color:#666;
+
+font-size:12px;
+
+}
+
+.connected{
+
+padding:6px 12px;
+
+border-radius:999px;
+
+background:#111;
+
+color:white;
+
+font-size:12px;
+
+}
+
+/* INPUTS */
+
+label{
+
+display:block;
+
+margin-top:16px;
+
+margin-bottom:8px;
+
+font-size:13px;
+
+font-weight:600;
+
+}
+
+input{
+
+width:100%;
+
+padding:12px;
+
+border:1px solid #DDD;
+
+border-radius:10px;
+
+font-size:14px;
+
+outline:none;
+
+transition:.2s;
+
+font-family:inherit;
+
+}
+
+input:focus{
+
+border-color:#111;
+
+}
+
+/* CODING PROFILES (collapsible) */
+
+.profiles-section{
+
+margin-top:24px;
+
+}
+
+.section-title{
+
+font-size:13px;
+
+font-weight:600;
+
+color:#111;
+
+margin-bottom:10px;
+
+}
+
+.profile-item{
+
+border:1px solid #ECECEC;
+
+border-radius:12px;
+
+margin-bottom:10px;
+
+overflow:hidden;
+
+background:#FAFAFA;
+
+}
+
+.profile-toggle{
+
+width:100%;
+
+display:flex;
+
+align-items:center;
+
+gap:10px;
+
+padding:13px 14px;
+
+background:transparent;
+
+border:none;
+
+border-radius:0;
+
+text-align:left;
+
+font-size:14px;
+
+font-weight:600;
+
+color:#111;
+
+}
+
+.profile-toggle:hover{
+
+background:#F0F0F0;
+
+}
+
+.profile-toggle .arrow{
+
+display:inline-block;
+
+font-size:10px;
+
+color:#777;
+
+transition:transform .2s;
+
+}
+
+.profile-toggle.open .arrow{
+
+transform:rotate(90deg);
+
+}
+
+.profile-toggle .handle-preview{
+
+margin-left:auto;
+
+font-size:12px;
+
+font-weight:500;
+
+color:#999;
+
+}
+
+.profile-panel{
+
+max-height:0;
+
+overflow:hidden;
+
+transition:max-height .2s ease;
+
+padding:0 14px;
+
+}
+
+.profile-panel.open{
+
+max-height:160px;
+
+padding:0 14px 14px;
+
+}
+
+/* STATS */
+
+.stats{
+
+display:grid;
+
+grid-template-columns:repeat(3,1fr);
+
+gap:10px;
+
+margin-top:24px;
+
+}
+
+.card{
+
+padding:15px;
+
+border-radius:12px;
+
+background:#FAFAFA;
+
+border:1px solid #ECECEC;
+
+text-align:center;
+
+}
+
+.card h4{
+
+font-size:11px;
+
+font-weight:500;
+
+color:#777;
+
+margin-bottom:8px;
+
+}
+
+.card span{
+
+font-size:24px;
+
+font-weight:700;
+
+}
+
+/* STATUS */
+
+#status{
+
+margin-top:18px;
+
+font-size:13px;
+
+text-align:center;
+
+font-weight:600;
+
+}
+
+.ok{
+
+color:#0A8F45;
+
+}
+
+.err{
+
+color:#D72638;
+
+}
+
+/* FOOTER */
+
+.footer{
+
+margin-top:25px;
+
+text-align:center;
+
+font-size:12px;
+
+color:#999;
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container">
+
+<div class="header">
+
+<div class="logo">
+ Code<span>Commit</span>
+</div>
+
+<div class="version">
+v1.0
+</div>
+
+</div>
+
+<!-- LOGIN -->
+
+<div id="loggedOutView">
+
+<div class="hero">
+🚀
+</div>
+
+<h2>
+Connect GitHub
+</h2>
+
+<p class="subtitle">
+Automatically commit every accepted coding solution to your GitHub repository.
+</p>
+
+<button class="primary" id="loginBtn">
+Login with GitHub
+</button>
+
+<div class="footer">
+Your coding journey, version controlled.
+</div>
+
+</div>
+
+<!-- LOGGED IN -->
+
+<div id="loggedInView">
+
+<div class="profile">
+
+<div class="profile-left">
+
+<span>GitHub</span>
+
+<small id="userPill">
+Connected
+</small>
+
+</div>
+
+<div class="connected">
+✓ Connected
+</div>
+
+</div>
+
+<label>
+Repository Owner
+</label>
+
+<input
+id="owner"
+placeholder="your_github_username">
+
+<label>
+Repository Name
+</label>
+
+<input
+id="repo"
+placeholder="your_repo_name">
+
+<button
+class="primary"
+id="saveRepoBtn"
+style="margin-top:18px;">
+Save Repository
+</button>
+
+<!-- CODING PROFILES -->
+
+<div class="profiles-section">
+
+<div class="section-title">
+Coding Profiles
+</div>
+
+<div class="profile-item">
+
+<button class="profile-toggle" id="leetcodeToggle" data-target="leetcodePanel">
+<span class="arrow">▶</span>
+<span>LeetCode</span>
+<span class="handle-preview" id="leetcodePreview"></span>
+</button>
+
+<div class="profile-panel" id="leetcodePanel">
+<label>
+LeetCode Handle
+</label>
+<input id="leetcodeHandle" placeholder="e.g. random_user123">
+<button class="primary small" id="saveLeetcodeBtn">
+Save Handle
+</button>
+</div>
+
+</div>
+
+<div class="profile-item">
+
+<button class="profile-toggle" id="codeforcesToggle" data-target="codeforcesPanel">
+<span class="arrow">▶</span>
+<span>Codeforces</span>
+<span class="handle-preview" id="codeforcesPreview"></span>
+</button>
+
+<div class="profile-panel" id="codeforcesPanel">
+<label>
+Codeforces Handle
+</label>
+<input id="cfHandle" placeholder="e.g. random_user123">
+<button class="primary small" id="saveCfHandleBtn">
+Save Handle
+</button>
+</div>
+
+</div>
+
+</div>
+
+<div class="stats">
+
+<div class="card">
+
+<h4>
+Today's Solves
+</h4>
+
+<span id="todaySolves">
+0
+</span>
+
+</div>
+
+<div class="card">
+
+<h4>
+Current Streak
+</h4>
+
+<span id="currentStreak">
+0
+</span>
+
+</div>
+
+<div class="card">
+
+<h4>
+Total Solves
+</h4>
+
+<span id="totalSolves">
+0
+</span>
+
+</div>
+
+</div>
+
+<button
+class="secondary"
+id="logoutBtn">
+Log Out
+</button>
+
+<div
+id="status">
+</div>
+
+ 
+
+</div>
+
+<script src="popup.js"></script>
+
+</body>
+</html>
