@@ -2,6 +2,24 @@ import { useState, useEffect } from "react";
 
 const HEADLINE = "Every accepted solution, committed automatically.";
 
+const COMPARISON = {
+  without: [
+    "Download the solution",
+    "Create folders manually",
+    "Copy & paste code",
+    "Commit changes",
+    "Push to GitHub",
+  ],
+  with: [
+    "Submit your solution",
+    "Accepted detected automatically",
+    "Code committed instantly",
+    "Repository stays organized",
+    "You're done 🚀",
+  ],
+};
+
+
 // ---- Signature element: typewriter headline, the one motion on the page ----
 function Typewriter({ text, speed = 32 }) {
   const [count, setCount] = useState(0);
@@ -118,6 +136,43 @@ function FlowStep({ step, isLast }) {
   );
 }
 
+function ComparisonCard({ title, items, positive }) {
+  return (
+    <div
+      className={`rounded-2xl border p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${
+        positive
+          ? "border-black bg-black text-white"
+          : "border-[#EAEAEA] bg-white"
+      }`}
+    >
+      <h3
+        className={`cc-mono text-lg font-semibold mb-6 ${
+          positive ? "text-white" : "text-black"
+        }`}
+      >
+        {title}
+      </h3>
+
+      <ul className="space-y-4">
+        {items.map((item, index) => (
+          <li
+            key={index}
+            className={`flex items-center gap-3 text-sm ${
+              positive ? "text-gray-200" : "text-[#666]"
+            }`}
+          >
+            <span className="text-base">
+              {positive ? "✓" : "✕"}
+            </span>
+
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function CodeConnectHomepageMono() {
   return (
     <div className="min-h-screen bg-white text-black">
@@ -184,7 +239,45 @@ export default function CodeConnectHomepageMono() {
           ))}
         </div>
       </section>
+      
+{/* Why CodeCommit */}
 
+<section className="max-w-5xl mx-auto px-6 pb-24">
+
+  <div className="text-center mb-14">
+
+    <div className="text-[11px] uppercase tracking-wider text-[#9B9B9B] mb-3">
+      Why CodeCommit
+    </div>
+
+    <h2 className="cc-mono text-[28px] font-medium mb-4">
+      Stop managing files.<br />
+      Start solving problems.
+    </h2>
+
+    <p className="cc-sans text-[14px] text-[#666] max-w-xl mx-auto leading-relaxed">
+      CodeCommit removes the repetitive GitHub workflow so you can focus
+      entirely on competitive programming.
+    </p>
+
+  </div>
+
+  <div className="grid md:grid-cols-2 gap-8">
+
+    <ComparisonCard
+      title="Traditional Workflow"
+      items={COMPARISON.without}
+    />
+
+    <ComparisonCard
+      title="With CodeCommit"
+      items={COMPARISON.with}
+      positive
+    />
+
+  </div>
+
+</section>
       {/* Closing CTA — centered again */}
       <section className="max-w-2xl mx-auto px-6 pb-24 text-center border-t border-[#EAEAEA] pt-16">
         <h2 className="cc-mono text-[19px] font-medium mb-3">
