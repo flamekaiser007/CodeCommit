@@ -35,7 +35,7 @@ router.post("/", requireAuth, async (req, res) => {
       message,
     });
 
-    recordSolve(user.id, { platform, title });
+    await recordSolve(user.id, { platform, title });
 
     res.json({
       ok: true,

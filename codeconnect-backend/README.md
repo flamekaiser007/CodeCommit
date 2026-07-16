@@ -70,8 +70,25 @@ Extension                    Backend                         GitHub
 |------------------------------|---------------------------------------------------|
 | `GET /auth/github/login`     | Kicks off the flow. Requires `?redirect_uri=` (the extension's chromiumapp.org URL). |
 | `GET /auth/github/callback`  | GitHub redirects here. Exchanges code, creates/updates the user, hands a session token back to the extension. |
-| `GET /me`                    | Protected — returns the logged-in user's GitHub username/avatar. Used to confirm a session token is valid. |
+| `GET /me`                    | Protected — returns username, avatar, connected repo, and real solve stats: `totalSolves`, `todaySolves`, `currentStreak`, `longestStreak`. |
+| `PUT /me/repo`               | Protected — sets which repo pushes go to. Body: `{ owner, repo }`. |
+| `POST /push`                 | Protected — the extension calls this on every Accepted submission. Body: `{ platform, title, language, code }`. Pushes to the user's configured repo using their stored GitHub token, and increments their solve count. |
 | `GET /health`                | Basic uptime check. |
+
+### Example: pushing a solve (what the extension will call)
+
+```bash
+curl -X POST http://localhost:3000/push \
+  -H "Authorization: Bearer <sessionToken>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "leetcode",
+    "title": "Two Sum",
+    "language": "python3",
+    "code": "class Solution:\n    def twoSum(self, nums, target):\n        ..."
+  }'
+```
+Returns `{ ok: true, path, url, commitSha }` on success, or `400` if no repo is configured yet for that user (call `PUT /me/repo` first).
 
 ## Extension-side integration
 
@@ -103,6 +120,7 @@ Note: `chrome.identity.getRedirectURL()` only returns a real `chromiumapp.org` U
 ## Not implemented yet (next steps)
 
 - The GitHub access token is stored **in plaintext** in SQLite — fine for local dev, not for production. Before deploying, encrypt it at rest.
-- No rate limiting on `/auth/github/login`.
+- No rate limiting on `/auth/github/login` or `/push` (the latter especially matters — nothing currently stops a compromised token from being used to spam commits).
 - SQLite is fine for one instance; swap for Postgres if you ever run multiple backend instances.
-- No endpoint yet for the actual "push accepted solution" step — that's the next piece, and it'll live behind `requireAuth` just like `/me`.
+- The extension's `background.js` still pushes directly to GitHub with a pasted PAT — it hasn't been updated to call this backend's `/push` endpoint yet. That's the next wiring step.
+- Streak calculation uses UTC calendar days, not the user's local timezone. Someone solving late at night or early morning near the UTC day boundary may see their streak count a solve on a different day than it felt like locally. Documented in detail in `src/lib/streak.js` — the real fix is accepting a per-user timezone offset and shifting the day-boundary math by it.

@@ -3,24 +3,20 @@
   "name": "CodeCommit",
   "version": "1.0.0",
   "description": "Automatically pushes accepted submissions from coding platforms to GitHub.",
-
   "permissions": [
     "storage",
     "notifications",
     "identity"
   ],
-
   "host_permissions": [
     "https://leetcode.com/*",
     "https://codeforces.com/*",
     "https://www.hackerrank.com/*",
-    "http://localhost:3000/*"
+    "https://codecommit-backend.onrender.com/*"
   ],
-
   "background": {
     "service_worker": "background.js"
   },
-
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -30,34 +26,48 @@
       "128": "icons/icon-128.png"
     }
   },
-
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
   },
-
   "content_scripts": [
     {
-      "matches": ["https://leetcode.com/problems/*"],
-      "js": ["content-scripts/leetcode-inject.js"],
+      "matches": [
+        "https://leetcode.com/problems/*"
+      ],
+      "js": [
+        "content-scripts/leetcode-inject.js"
+      ],
       "run_at": "document_start",
       "world": "MAIN"
     },
     {
-      "matches": ["https://leetcode.com/problems/*"],
-      "js": ["content-scripts/leetcode-bridge.js"],
+      "matches": [
+        "https://leetcode.com/problems/*"
+      ],
+      "js": [
+        "content-scripts/leetcode-bridge.js"
+      ],
       "run_at": "document_start"
     },
     {
-      "matches": ["https://codeforces.com/*"],
-      "js": ["content-scripts/codeforces.js"],
+      "matches": [
+        "https://codeforces.com/*"
+      ],
+      "js": [
+        "content-scripts/codeforces.js"
+      ],
       "run_at": "document_idle"
     },
     {
-      "matches": ["https://www.hackerrank.com/*"],
-      "js": ["content-scripts/hackerrank.js"],
+      "matches": [
+        "https://www.hackerrank.com/*"
+      ],
+      "js": [
+        "content-scripts/hackerrank.js"
+      ],
       "run_at": "document_idle"
     }
   ]

@@ -4,7 +4,7 @@
 
 // TODO: change this to your deployed backend URL before publishing.
 // Also update manifest.json's host_permissions to match.
-const BACKEND_URL = "http://localhost:3000";
+const BACKEND_URL = "https://codecommit-backend.onrender.com";
 
 // ---------------------------------------------------------------------
 // Auth

@@ -1,4 +1,5 @@
 import "dotenv/config";
+import dns from "node:dns";
 import express from "express";
 import cors from "cors";
 import authRoutes from "./src/routes/auth.js";
@@ -6,6 +7,8 @@ import meRoutes from "./src/routes/me.js";
 import pushRoutes from "./src/routes/push.js";
 import { requireAuth } from "./src/middleware/requireAuth.js";
 import { getStats } from "./src/db/index.js";
+
+dns.setDefaultResultOrder("ipv4first");
 
 const app = express();
 
@@ -19,8 +22,8 @@ app.use("/push", pushRoutes);
 // Quick sanity-check route: the extension can call this after login to
 // confirm the session token works and to display "Connected as X", plus
 // real solve/streak stats for the popup's dashboard view.
-app.get("/me", requireAuth, (req, res) => {
-  const stats = getStats(req.user.id);
+app.get("/me", requireAuth, async (req, res) => {
+  const stats = await getStats(req.user.id);
   res.json({
     username: req.user.username,
     avatarUrl: req.user.avatar_url,

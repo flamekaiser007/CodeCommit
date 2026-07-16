@@ -1,75 +1,75 @@
-import Database from "better-sqlite3";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
 import { todayUTC, computeCurrentStreak, computeLongestStreak } from "../lib/streak.js";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const db = new Database(path.join(__dirname, "..", "..", "codeconnect.db"));
+neonConfig.webSocketConstructor = ws;
 
-db.pragma("journal_mode = WAL");
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    github_id INTEGER UNIQUE NOT NULL,
-    username TEXT NOT NULL,
-    avatar_url TEXT,
-    -- NOTE: stored in plaintext for this MVP. Before going to production,
-    -- encrypt this at rest (e.g. with a KMS-managed key) since it's a
-    -- live credential that can push to any repo the user granted access to.
-    github_access_token TEXT NOT NULL,
-    repo_owner TEXT,
-    repo_name TEXT,
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+async function init() {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS users (
+      id SERIAL PRIMARY KEY,
+      github_id BIGINT UNIQUE NOT NULL,
+      username TEXT NOT NULL,
+      avatar_url TEXT,
+      github_access_token TEXT NOT NULL,
+      repo_owner TEXT,
+      repo_name TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
 
-  -- One row per successful push. total/today/streak are all DERIVED from
-  -- this table rather than kept as separate running counters, so there's
-  -- no risk of a counter drifting out of sync with reality.
-  CREATE TABLE IF NOT EXISTS solves (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id INTEGER NOT NULL REFERENCES users(id),
-    platform TEXT NOT NULL,
-    title TEXT NOT NULL,
-    solved_date TEXT NOT NULL, -- YYYY-MM-DD, UTC calendar day
-    created_at TEXT NOT NULL DEFAULT (datetime('now'))
-  );
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS solves (
+      id SERIAL PRIMARY KEY,
+      user_id INTEGER NOT NULL REFERENCES users(id),
+      platform TEXT NOT NULL,
+      title TEXT NOT NULL,
+      solved_date DATE NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    );
+  `);
 
-  CREATE INDEX IF NOT EXISTS idx_solves_user_date ON solves(user_id, solved_date);
-`);
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_solves_user_date ON solves(user_id, solved_date);
+  `);
+}
 
-export function setUserRepo(userId, { owner, repo }) {
-  db.prepare("UPDATE users SET repo_owner = ?, repo_name = ? WHERE id = ?").run(
-    owner,
-    repo,
-    userId
-  );
+const ready = init();
+
+export async function setUserRepo(userId, { owner, repo }) {
+  await ready;
+  await pool.query("UPDATE users SET repo_owner = $1, repo_name = $2 WHERE id = $3", [owner, repo, userId]);
   return getUserById(userId);
 }
 
-export function recordSolve(userId, { platform, title }) {
-  db.prepare(
-    "INSERT INTO solves (user_id, platform, title, solved_date) VALUES (?, ?, ?, ?)"
-  ).run(userId, platform, title, todayUTC());
+export async function recordSolve(userId, { platform, title }) {
+  await ready;
+  await pool.query(
+    "INSERT INTO solves (user_id, platform, title, solved_date) VALUES ($1, $2, $3, $4)",
+    [userId, platform, title, todayUTC()]
+  );
 }
 
-export function getStats(userId) {
-  const totalSolves = db
-    .prepare("SELECT COUNT(*) AS n FROM solves WHERE user_id = ?")
-    .get(userId).n;
-
-  const todaySolves = db
-    .prepare("SELECT COUNT(*) AS n FROM solves WHERE user_id = ? AND solved_date = ?")
-    .get(userId, todayUTC()).n;
-
-  const rows = db
-    .prepare(
-      "SELECT DISTINCT solved_date FROM solves WHERE user_id = ? ORDER BY solved_date DESC"
-    )
-    .all(userId);
-  const datesDesc = rows.map((r) => r.solved_date);
+export async function getStats(userId) {
+  await ready;
+  const totalRes = await pool.query("SELECT COUNT(*) AS n FROM solves WHERE user_id = $1", [userId]);
+  const totalSolves = Number(totalRes.rows[0].n);
+  const todayRes = await pool.query(
+    "SELECT COUNT(*) AS n FROM solves WHERE user_id = $1 AND solved_date = $2",
+    [userId, todayUTC()]
+  );
+  const todaySolves = Number(todayRes.rows[0].n);
+  const datesRes = await pool.query(
+    "SELECT DISTINCT solved_date FROM solves WHERE user_id = $1 ORDER BY solved_date DESC",
+    [userId]
+  );
+  const datesDesc = datesRes.rows.map((r) => {
+    const d = r.solved_date;
+    return d instanceof Date ? d.toISOString().slice(0, 10) : d;
+  });
   const datesAsc = [...datesDesc].reverse();
-
   return {
     totalSolves,
     todaySolves,
@@ -78,29 +78,27 @@ export function getStats(userId) {
   };
 }
 
-export function upsertUser({ githubId, username, avatarUrl, accessToken }) {
-  const existing = db
-    .prepare("SELECT * FROM users WHERE github_id = ?")
-    .get(githubId);
-
-  if (existing) {
-    db.prepare(
-      "UPDATE users SET username = ?, avatar_url = ?, github_access_token = ? WHERE github_id = ?"
-    ).run(username, avatarUrl, accessToken, githubId);
-    return db.prepare("SELECT * FROM users WHERE github_id = ?").get(githubId);
+export async function upsertUser({ githubId, username, avatarUrl, accessToken }) {
+  await ready;
+  const existing = await pool.query("SELECT * FROM users WHERE github_id = $1", [githubId]);
+  if (existing.rows.length > 0) {
+    const updated = await pool.query(
+      "UPDATE users SET username = $1, avatar_url = $2, github_access_token = $3 WHERE github_id = $4 RETURNING *",
+      [username, avatarUrl, accessToken, githubId]
+    );
+    return updated.rows[0];
   }
-
-  const result = db
-    .prepare(
-      "INSERT INTO users (github_id, username, avatar_url, github_access_token) VALUES (?, ?, ?, ?)"
-    )
-    .run(githubId, username, avatarUrl, accessToken);
-
-  return db.prepare("SELECT * FROM users WHERE id = ?").get(result.lastInsertRowid);
+  const inserted = await pool.query(
+    "INSERT INTO users (github_id, username, avatar_url, github_access_token) VALUES ($1, $2, $3, $4) RETURNING *",
+    [githubId, username, avatarUrl, accessToken]
+  );
+  return inserted.rows[0];
 }
 
-export function getUserById(id) {
-  return db.prepare("SELECT * FROM users WHERE id = ?").get(id);
+export async function getUserById(id) {
+  await ready;
+  const res = await pool.query("SELECT * FROM users WHERE id = $1", [id]);
+  return res.rows[0] || null;
 }
 
-export default db;
+export default pool;

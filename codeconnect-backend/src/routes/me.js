@@ -5,7 +5,7 @@ import { setUserRepo } from "../db/index.js";
 const router = Router();
 
 // PUT /me/repo  { owner: "flamekaiser007", repo: "LeetCode" }
-router.put("/repo", requireAuth, (req, res) => {
+router.put("/repo", requireAuth, async (req, res) => {
   let { owner, repo } = req.body;
   if (!owner || !repo) {
     return res.status(400).json({ error: "Both owner and repo are required." });
@@ -16,7 +16,7 @@ router.put("/repo", requireAuth, (req, res) => {
   // instead of an obvious error. Strip it here so it can never happen.
   owner = owner.trim().replace(/^@/, "");
   repo = repo.trim();
-  const user = setUserRepo(req.user.id, { owner, repo });
+  const user = await setUserRepo(req.user.id, { owner, repo });
   res.json({ repoOwner: user.repo_owner, repoName: user.repo_name });
 });
 
